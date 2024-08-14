@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AJIO Search</title>
+</head>
+<body>
+    <h1>Search for Women's Bags, Belts, and Wallets</h1>
+    <form action="/" method="post">
+        <input type="text" name="search_term" placeholder="Enter search term..." required>
+        <button type="submit">Search</button>
+    </form>
+    {% if titles %}
+        <h2>Results:</h2>
+        <table border="1">
+            <tr>
+                <th>Title</th>
+                <th>Price</th>
+            </tr>
+            {% for title, price in zip(titles, prices) %}
+                <tr>
+                    <td>{{ title }}</td>
+                    <td>{{ price }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+</body>
+</html>

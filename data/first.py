@@ -1,27 +1,57 @@
 import pandas as pd
 from bs4 import BeautifulSoup
 import requests
-def fetchAndSaveToFile(html, path):
-    r= requests.get(html)
-    r.raise_for_status()
-    with open(path, "w", encoding='utf-8') as f:
-        f.write(r.text)
+from flask import Flask, render_template, request
+
+app = Flask(__name__)
+
+
+def fetch_and_save_to_file(url):
+    try:
+        r = requests.get(url)
+        r.raise_for_status()
         return r.text
+    except requests.RequestException as e:
+        print(f"Error fetching data: {e}")
+        return None
 
-html= "https://www.ajio.com/women-bags-belts-wallets/c/830301"
 
-html_content=fetchAndSaveToFile(html,"data1.html")
-soup = BeautifulSoup(html_content, 'html.parser')
-spans= soup.find_all(class_="contentHolder")
-prices= soup.select("span.price")
-data ={"title":[], "price":[]}
-for span in spans:
-    print(span.get_text(strip=True))
-    data["title"].append(span.get_text(strip=True))
+def search_items(search_term):
+    search_url = f"https://www.ajio.com/search/?query={search_term}"
+    html_content = fetch_and_save_to_file(search_url)
 
-for price in prices:
-    print(price.get_text(strip=True))
-    data["price"].append(price.get_text(strip=True))
+    if not html_content:
+        return [], []
 
-df = pd.DataFrame.from_dict(data)
-df.to_excel("data.xlsx", index=False)
+    soup = BeautifulSoup(html_content, 'html.parser')
+    spans = soup.find_all(class_="contentHolder")
+    prices = soup.select("span.price")
+
+    data = {"title": [], "price": []}
+
+    for span in spans:
+        title = span.get_text(strip=True)
+        if title:
+            data["title"].append(title)
+
+    for price in prices:
+        price_text = price.get_text(strip=True)
+        if price_text:
+            data["price"].append(price_text)
+
+    return data["title"], data["price"]
+
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    titles = []
+    prices = []
+    if request.method == 'POST':
+        search_term = request.form['search_term']
+        titles, prices = search_items(search_term)
+
+    return render_template('index.html', titles=titles, prices=prices)
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
